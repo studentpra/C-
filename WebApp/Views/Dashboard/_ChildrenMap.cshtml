@@ -1,0 +1,102 @@
+﻿@using Microsoft.Azure.IoTSuite.Connectedfactory.WebApp.Models
+@using Microsoft.Azure.IoTSuite.Connectedfactory.WebApp.Contoso;
+
+@model DashboardModel
+
+@{ var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+    var json = serializer.Serialize(Model.Children);
+    var mapApiQueryKey = serializer.Serialize(Model.MapApiQueryKey);
+}
+
+<!-- Reference to the Azure Maps SDK -->
+<link rel="stylesheet" href="https://atlas.microsoft.com/sdk/css/atlas.min.css?api-version=1.0" type="text/css" />
+<script src="https://atlas.microsoft.com/sdk/js/atlas.min.js?api-version=1.0"></script>
+
+<div id="map">
+    <button class="dashboard_zoom dashboard_zoom-plus" onclick="ZoomIn()"> + </button>
+    <button class="dashboard_zoom dashboard_zoom-minus" onclick="ZoomOut()"> - </button>
+</div>
+
+<script type='text/javascript'>
+
+    var children = @Html.Raw(json);
+    var subscriptionKey = @Html.Raw(mapApiQueryKey);
+    var factoryMapPushpin = [];
+    var map = new atlas.Map("map", {
+        "subscription-key": subscriptionKey,
+        center: [-1, 38],
+        interactive: true,
+        zoom: 1
+    });
+
+    var pinImgStatuGood = new Image();
+    pinImgStatuGood.onload = function () {
+        //Add the pin image to the map resources. Give it a unique id.
+        map.addIcon('info-icon', pinImgStatuGood);
+    }
+    pinImgStatuGood.src = "/Content/img/info.svg";
+
+    var pinImgStatuPoor = new Image();
+    pinImgStatuPoor.onload = function () {
+        //Add the pin image to the map resources. Give it a unique id.
+        map.addIcon('alert-icon', pinImgStatuPoor);
+    }
+    pinImgStatuPoor.src = "/Content/img/critical.svg";
+
+    addPin();
+
+    function addPin() {
+        for (index = 0; index < children.length; index++) {
+            if (children[index].Latitude != 0 && children[index].Longitude != 0) {
+                var pushPinFile = "info-icon";
+                var city = children[index].City;
+                if (children[index].Status == "@ContosoPerformanceStatus.Poor.ToString()") {
+                    var pushPinFile = "alert-icon";
+                }
+                factoryMapPushpin.push(
+                    new atlas.data.Feature(new atlas.data.Point([children[index].Longitude, children[index].Latitude]),
+                    {
+                        icon: pushPinFile,
+                        title: children[index].Name
+                    })
+                );
+            }
+        }
+        map.addPins(factoryMapPushpin, {
+            fontColor: "#000",
+            fontSize: 14,
+            name: "default-pin-layer",
+            textOffset: [0, 15],
+        });
+
+        map.addEventListener('click', "default-pin-layer",
+            function (event) {
+                for (index = 0; index < children.length; index++) {
+                    console.log("argument ", arguments);
+                    console.log("event ", event);
+                    if (event.features[0].properties.title == children[index].Name) {
+                        var dashboardUrl = "Index?TopNode=" + children[index].Key;
+                        window.location.assign(dashboardUrl);
+                    }
+                }
+            });
+
+    }
+
+    function ZoomIn() {
+        zoom(1);
+    }
+
+    function ZoomOut() {
+        zoom(-1);
+    }
+
+    function zoom(zoomFactor) {
+        var currZoom = map.getCamera().zoom;
+        map.setCamera({
+            zoom: currZoom + zoomFactor
+        });
+    }
+
+</script>
+
