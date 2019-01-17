@@ -113,7 +113,10 @@ namespace Microsoft.Azure.IoTSuite.Connectedfactory.WebApp
                 cultureName = cultureCookie.Value;
             }
             else
-            {
+            {		
+		
+		 // Validate culture name
+		  // Validate culture name
                 // Obtain it from HTTP header AcceptLanguages
                 cultureName = this.Request.UserLanguages != null && this.Request.UserLanguages.Length > 0 ? this.Request.UserLanguages[0] : null;
             }
